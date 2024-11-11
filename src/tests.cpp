@@ -1,4 +1,5 @@
 #include "tests.h"
+#include <iostream>
 
 // 练习1，实现库函数strlen
 int my_strlen(char *str) {
@@ -7,7 +8,12 @@ int my_strlen(char *str) {
      */
 
     // IMPLEMENT YOUR CODE HERE
-    return 0;
+    int length = 0;
+    while (str[length]!='\0')
+    {
+        length++;
+    }
+    return length;
 }
 
 
@@ -19,6 +25,17 @@ void my_strcat(char *str_1, char *str_2) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+    while (*str_1!='\0')
+    {
+        str_1++;
+    }
+    while(*str_2!='\0')
+    {
+        *str_1 = *str_2;
+        str_1++;
+        str_2++;
+    }
+    *str_1 ='\0';
 }
 
 
@@ -31,7 +48,30 @@ char* my_strstr(char *s, char *p) {
      */
 
     // IMPLEMENT YOUR CODE HERE
-    return 0;
+
+ 
+    int p_len = my_strlen(p);
+    if (p_len == 0) return s; // 如果p是空字符串，根据标准定义返回s的起始地址
+
+    // 遍历主串s
+    for (char* i = s; *i != '\0'; i++) {
+        // 如果找到匹配的起始字符
+        if (*i == *p) {
+            char* s_temp = i;
+            char* p_temp = p;
+            // 检查后续字符是否匹配
+            while (*s_temp && *p_temp && *s_temp == *p_temp) {
+                s_temp++;
+                p_temp++;
+            }
+            // 如果完全匹配，返回匹配的起始位置
+            if (*p_temp == '\0') {
+                return i;
+            }
+        }
+    }
+    // 如果没有找到匹配的子串，返回NULL
+    return NULL;
 }
 
 
@@ -97,6 +137,19 @@ void rgb2gray(float *in, float *out, int h, int w) {
 
     // IMPLEMENT YOUR CODE HERE
     // ...
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            // 计算当前像素在一维数组中的索引
+            int index = i * w + j;
+            // 计算RGB每个分量的地址
+            float* red = in + index * 3;
+            float* green = red + 1;
+            float* blue = red + 2;
+
+            // 利用公式 V = 0.1140 * B + 0.5870 * G + 0.2989 * R 计算灰度值
+            *(out + index) = 0.1140 * (*blue) + 0.5870 * (*green) + 0.2989 * (*red);
+        }
+    }
 }
 
 // 练习5，实现图像处理算法 resize：缩小或放大图像
@@ -199,7 +252,34 @@ void resize(float *in, float *out, int h, int w, int c, float scale) {
     int new_h = h * scale, new_w = w * scale;
     // IMPLEMENT YOUR CODE HERE
 
+    for (int y = 0; y < new_h; y++) {
+        for (int x = 0; x < new_w; x++) {
+            float x0 = x / scale;
+            float y0 = y / scale;
+
+            int x1 = (int)x0;
+            int y1 = (int)y0;
+            int x2 = x1 < w - 1 ? x1 + 1 : x1;
+            int y2 = y1 < h - 1 ? y1 + 1 : y1;
+
+            float dx = x0 - x1;
+            float dy = y0 - y1;
+
+            for (int channel = 0; channel < c; channel++) {
+                float p1 = in[(y1 * w + x1) * c + channel];
+                float p2 = in[(y1 * w + x2) * c + channel];
+                float p3 = in[(y2 * w + x1) * c + channel];
+                float p4 = in[(y2 * w + x2) * c + channel];
+
+                float Q = p1 * (1 - dx) * (1 - dy) + p2 * dx * (1 - dy) + p3 * (1 - dx) * dy + p4 * dx * dy;
+                int index = (y * new_w + x) * c + channel;
+                out[index] = Q;
+            }
+        }
+    }
 }
+
+
 
 
 // 练习6，实现图像处理算法：直方图均衡化
@@ -221,4 +301,29 @@ void hist_eq(float *in, int h, int w) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+    // Step 1: Calculate the histogram
+    int hist[256] = {0};
+    for (int i = 0; i < h * w; ++i) {
+        hist[(int)in[i]]++;
+    }
+
+    // Step 2: Calculate the cumulative histogram
+    float cum_hist[256] = {0};
+    float total = h * w;
+    cum_hist[0] = hist[0] / total;
+    for (int i = 1; i < 256; ++i) {
+        cum_hist[i] = cum_hist[i - 1] + hist[i] / total;
+    }
+
+    // Step 3: Calculate the mapping function
+    for (int i = 0; i < 256; ++i) {
+        cum_hist[i] = 255 * cum_hist[i]; // Scale to [0, 255]
+    }
+
+    // Step 4: Apply the mapping function
+    for (int i = 0; i < h * w; ++i) {
+        in[i] = cum_hist[(int)in[i]];
+    }
 }
+
+
